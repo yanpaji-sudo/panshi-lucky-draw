@@ -1,0 +1,13 @@
+{
+  "name": "panshi-lucky-draw",
+  "version": "1.0.0",
+  "private": true,
+  "description": "磐石甄选幸运转轮",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
