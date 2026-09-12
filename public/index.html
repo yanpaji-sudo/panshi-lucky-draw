@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>磐石甄选 · 幸运转轮</title>
+
+<style>
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  min-height:100vh;
+  font-family:"Microsoft YaHei",Arial,sans-serif;
+  background:
+    radial-gradient(circle at top,#3b2a0b,#120e07 45%,#050505);
+  color:#fff;
+}
+
+.container{
+  width:100%;
+  max-width:900px;
+  margin:auto;
+  padding:30px 15px 50px;
+}
+
+.header{
+  text-align:center;
+  margin-bottom:25px;
+}
+
+.logo{
+  font-size:34px;
+  font-weight:900;
+  letter-spacing:3px;
+}
+
+.subtitle{
+  margin-top:10px;
+  color:#d6b96a;
+  font-size:14px;
+}
+
+.card{
+  background:linear-gradient(
+    145deg,
+    rgba(255,255,255,.08),
+    rgba(255,255,255,.02)
+  );
+  border:1px solid rgba(220,180,80,.35);
+  border-radius:20px;
+  padding:25px;
+  box-shadow:0 20px 60px rgba(0,0,0,.5);
+}
+
+.user-box{
+  display:flex;
+  gap:10px;
+  margin-bottom:25px;
+}
+
+.user-box input{
+  flex:1;
+  padding:14px 16px;
+  border-radius:12px;
+  border:1px solid #765b20;
+  outline:none;
+  background:#17130b;
+  color:white;
+  font-size:16px;
+}
+
+.user-box button{
+  width:120px;
+  border:0;
+  border-radius:12px;
+  background:linear-gradient(135deg,#f7d77c,#b77b12);
+  color:#241705;
+  font-size:16px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.wheel-area{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  padding:20px;
+}
+
+.wheel{
+  width:430px;
+  max-width:90vw;
+  aspect-ratio:1;
+  border-radius:50%;
+  border:12px solid #c79b3c;
+  background:
+    conic-gradient(
+      #6e4311 0deg 45deg,
+      #e7c66e 45deg 90deg,
+      #6e4311 90deg 135deg,
+      #e7c66e 135deg 180deg,
+      #6e4311 180deg 225deg,
+      #e7c66e 225deg 270deg,
+      #6e4311 270deg 315deg,
+      #e7c66e 315deg 360deg
+    );
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  position:relative;
+  transition:transform 4s cubic-bezier(.15,.75,.15,1);
+  box-shadow:0 0 50px rgba(212,166,57,.25);
+}
+
+.wheel-inner{
+  width:130px;
+  height:130px;
+  border-radius:50%;
+  background:radial-gradient(circle,#ffe79c,#b9821d);
+  border:6px solid #fff0ae;
+  color:#2c1b05;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  font-size:20px;
+  font-weight:900;
+  box-shadow:0 8px 25px rgba(0,0,0,.4);
+}
+
+.pointer{
+  position:absolute;
+  top:-28px;
+  left:50%;
+  transform:translateX(-50%);
+  width:0;
+  height:0;
+  border-left:18px solid transparent;
+  border-right:18px solid transparent;
+  border-top:38px solid #e33;
+  z-index:10;
+}
+
+.prizes{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+  margin-top:20px;
+}
+
+.prize{
+  background:#151108;
+  border:1px solid #574419;
+  border-radius:12px;
+  padding:15px;
+  text-align:center;
+}
+
+.prize-icon{
+  font-size:30px;
+}
+
+.prize-name{
+  margin-top:8px;
+  font-size:14px;
+}
+
+.probability{
+  margin-top:6px;
+  color:#d7b75f;
+  font-size:12px;
+}
+
+.tip{
+  margin-top:20px;
+  text-align:center;
+  color:#999;
+  font-size:13px;
+}
+
+.result{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.75);
+  align-items:center;
+  justify-content:center;
+  z-index:100;
+}
+
+.result-box{
+  width:90%;
+  max-width:400px;
+  padding:40px 25px;
+  text-align:center;
+  background:#171208;
+  border:2px solid #d5a83d;
+  border-radius:20px;
+  box-shadow:0 20px 80px rgba(0,0,0,.8);
+}
+
+.result-icon{
+  font-size:70px;
+}
+
+.result-title{
+  font-size:28px;
+  color:#f1cb69;
+  font-weight:bold;
+  margin:15px 0;
+}
+
+.result button{
+  margin-top:20px;
+  width:100%;
+  padding:14px;
+  border:0;
+  border-radius:12px;
+  background:#d8ad48;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+@media(max-width:600px){
+  .logo{
+    font-size:26px;
+  }
+
+  .card{
+    padding:15px;
+  }
+
+  .wheel{
+    width:320px;
+  }
+
+  .wheel-inner{
+    width:100px;
+    height:100px;
+    font-size:16px;
+  }
+
+  .prizes{
+    grid-template-columns:repeat(2,1fr);
+  }
+
+  .user-box{
+    flex-direction:column;
+  }
+
+  .user-box button{
+    width:100%;
+    padding:14px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <div class="header">
+    <div class="logo">磐石甄选</div>
+    <div class="subtitle">幸运转轮 · 幸运好礼</div>
+  </div>
+
+  <div class="card">
+
+    <div class="user-box">
+      <input
+        id="userId"
+        placeholder="请输入参与编号"
+      >
+
+      <button onclick="startDraw()">
+        立即抽奖
+      </button>
+    </div>
+
+    <div class="wheel-area">
+
+      <div class="wheel" id="wheel">
+
+        <div class="pointer"></div>
+
+        <div class="wheel-inner">
+          幸运<br>
+          转轮
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="prizes" id="prizes"></div>
+
+    <div class="tip">
+      每个参与编号限抽一次 · 奖项概率公开透明
+    </div>
+
+  </div>
+
+</div>
+
+<div class="result" id="result">
+
+  <div class="result-box">
+
+    <div class="result-icon" id="resultIcon">
+      🎁
+    </div>
+
+    <div class="result-title" id="resultName">
+      恭喜中奖
+    </div>
+
+    <div>
+      感谢参与磐石甄选活动
+    </div>
+
+    <button onclick="closeResult()">
+      确定
+    </button>
+
+  </div>
+
+</div>
+
+<script>
+
+let prizeList = [];
+let spinning = false;
+
+async function loadPrizes(){
+
+  const res = await fetch("/api/prizes");
+  const data = await res.json();
+
+  if(!data.success){
+    return;
+  }
+
+  prizeList = data.prizes;
+
+  const box = document.getElementById("prizes");
+
+  box.innerHTML = prizeList.map(p => `
+    <div class="prize">
+      <div class="prize-icon">
+        ${p.image}
+      </div>
+
+      <div class="prize-name">
+        ${p.name}
+      </div>
+
+      <div class="probability">
+        概率 ${p.probability}%
+      </div>
+    </div>
+  `).join("");
+}
+
+async function startDraw(){
+
+  if(spinning){
+    return;
+  }
+
+  const input =
+    document.getElementById("userId");
+
+  const userId =
+    input.value.trim();
+
+  if(!userId){
+    alert("请输入参与编号");
+    return;
+  }
+
+  spinning = true;
+
+  try{
+
+    const res =
+      await fetch(
+        "/api/draw",
+        {
+          method:"POST",
+
+          headers:{
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+              userId:userId
+            })
+        }
+      );
+
+    const data =
+      await res.json();
+
+    if(!data.success){
+
+      alert(data.message);
+
+      spinning = false;
+
+      return;
+    }
+
+    const result =
+      data.result;
+
+    const wheel =
+      document.getElementById("wheel");
+
+    const rotate =
+      1800 +
+      Math.floor(
+        Math.random() * 720
+      );
+
+    wheel.style.transform =
+      `rotate(${rotate}deg)`;
+
+    setTimeout(() => {
+
+      document.getElementById(
+        "resultIcon"
+      ).textContent =
+        result.image;
+
+      document.getElementById(
+        "resultName"
+      ).textContent =
+        result.name;
+
+      document.getElementById(
+        "result"
+      ).style.display =
+        "flex";
+
+      spinning = false;
+
+      loadPrizes();
+
+    },4200);
+
+  }catch(error){
+
+    alert("网络异常，请稍后再试");
+
+    spinning = false;
+
+  }
+}
+
+function closeResult(){
+
+  document.getElementById(
+    "result"
+  ).style.display =
+    "none";
+
+}
+
+loadPrizes();
+
+</script>
+
+</body>
+</html>
