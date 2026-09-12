@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+<title>磐石甄选 · 幸运转轮后台</title>
+
+<style>
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  background:#f5f6f8;
+  font-family:"Microsoft YaHei",Arial,sans-serif;
+  color:#222;
+}
+
+.header{
+  height:64px;
+  background:#17130b;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  padding:0 25px;
+  font-size:20px;
+  font-weight:bold;
+}
+
+.container{
+  max-width:1200px;
+  margin:30px auto;
+  padding:0 15px;
+}
+
+.card{
+  background:#fff;
+  border-radius:12px;
+  padding:20px;
+  margin-bottom:20px;
+  box-shadow:0 3px 15px rgba(0,0,0,.06);
+}
+
+.login{
+  max-width:450px;
+  margin:80px auto;
+}
+
+h2,h3{
+  margin-top:0;
+}
+
+input{
+  border:1px solid #ddd;
+  border-radius:8px;
+  padding:10px 12px;
+  outline:none;
+  background:#fff;
+}
+
+input:focus{
+  border-color:#b88625;
+}
+
+button{
+  border:0;
+  padding:10px 16px;
+  border-radius:8px;
+  background:#b88625;
+  color:#fff;
+  cursor:pointer;
+  font-size:14px;
+}
+
+button:hover{
+  opacity:.9;
+}
+
+button.danger{
+  background:#d9534f;
+}
+
+button.gray{
+  background:#777;
+}
+
+.actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:15px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+th,
+td{
+  padding:12px;
+  border-bottom:1px solid #eee;
+  text-align:left;
+  vertical-align:middle;
+}
+
+th{
+  background:#fafafa;
+}
+
+.stats{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:15px;
+}
+
+.stat{
+  padding:20px;
+  background:#faf8f2;
+  border-radius:10px;
+}
+
+.stat-title{
+  color:#666;
+  margin-bottom:8px;
+}
+
+.stat-number{
+  font-size:30px;
+  font-weight:bold;
+  color:#a87519;
+}
+
+.log{
+  max-height:450px;
+  overflow:auto;
+}
+
+.badge{
+  display:inline-block;
+  padding:4px 8px;
+  border-radius:20px;
+  font-size:12px;
+}
+
+.badge-on{
+  background:#e7f7ed;
+  color:#18864b;
+}
+
+.badge-off{
+  background:#f1f1f1;
+  color:#888;
+}
+
+.login-tip{
+  color:#888;
+  font-size:13px;
+  line-height:1.7;
+}
+
+.empty{
+  text-align:center;
+  padding:30px;
+  color:#999;
+}
+
+@media(max-width:700px){
+
+  .header{
+    padding:0 15px;
+    font-size:17px;
+  }
+
+  .container{
+    margin:15px auto;
+  }
+
+  .card{
+    padding:15px;
+    overflow:auto;
+  }
+
+  .stats{
+    grid-template-columns:1fr;
+  }
+
+  table{
+    min-width:700px;
+    font-size:13px;
+  }
+
+  .actions button{
+    flex:1;
+  }
+
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+  磐石甄选 · 幸运转轮管理后台
+</div>
+
+<div
+  class="container"
+  id="app"
+>
+
+  <div class="card login">
+
+    <h2>后台登录</h2>
+
+    <p class="login-tip">
+      请输入管理员 Token 进入管理后台。
+      <br>
+      Token 请在 Render 的环境变量中设置。
+    </p>
+
+    <input
+      id="token"
+      type="password"
+      placeholder="请输入 ADMIN_TOKEN"
+      style="width:100%;margin:10px 0 15px"
+    >
+
+    <button
+      onclick="login()"
+      style="width:100%"
+    >
+      登录后台
+    </button>
+
+  </div>
+
+</div>
+
+<script>
+
+let token = "";
+
+let currentPrizes = [];
+
+
+/*
+|--------------------------------------------------------------------------
+| 请求头
+|--------------------------------------------------------------------------
+*/
+
+function getHeaders(){
+
+  return {
+    "Content-Type":"application/json",
+    "x-admin-token":token
+  };
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| 登录
+|--------------------------------------------------------------------------
+*/
+
+async function login(){
+
+  const input =
+    document.getElementById("token");
+
+  token =
+    input.value.trim();
+
+  if(!token){
+
+    alert("请输入管理员 Token");
+
+    return;
+
+  }
+
+  try{
+
+    const res =
+      await fetch(
+        "/api/admin/prizes",
+        {
+          method:"GET",
+          headers:getHeaders()
+        }
+      );
+
+    if(res.status !== 200){
+
+      alert("Token 错误，请检查后重新输入");
+
+      return;
+
+    }
+
+    localStorage.setItem(
+      "panshi_admin_token",
+      token
+    );
+
+    await renderDashboard();
+
+  }catch(error){
+
+    alert(
+      "连接服务器失败，请检查网站是否正常运行"
+    );
+
+  }
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| 初始化
+|--------------------------------------------------------------------------
+*/
+
+async function init(){
+
+  const savedToken =
+    localStorage.getItem(
+      "panshi_admin_token"
+    );
+
+  if(!savedToken){
+
+    return;
+
+  }
+
+  token =
+    savedToken;
+
+  try{
+
+    const res =
+      await fetch(
+        "/api/admin/prizes",
+        {
+          headers:getHeaders()
+        }
+      );
+
+    if(res.status === 200){
+
+      await renderDashboard();
+
+    }else{
+
+      localStorage.removeItem(
+        "panshi_admin_token"
+      );
+
+    }
+
+  }catch(error){
+
+    console.log(error);
+
+  }
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| 后台首页
+|--------------------------------------------------------------------------
+*/
+
+async function renderDashboard(){
+
+  try{
+
+    const prizesRes =
+      await fetch(
+        "/api/admin/prizes",
+        {
+          headers:getHeaders()
+        }
+      );
+
+    const prizesData =
+      await prizesRes.json();
+
+    if(!prizesData.success){
+
+      alert("获取奖项失败");
+
+      return;
+
+    }
+
+    const statsRes =
+      await fetch(
+        "/api/admin/stats",
+        {
+          headers:getHeaders()
+        }
+      );
+
+    const stats =
+      await statsRes.json();
+
+    const logsRes =
+      await fetch(
+        "/api/admin/logs",
+        {
+          headers:getHeaders()
+        }
+      );
+
+    const logs =
+      await logsRes.json();
+
+    currentPrizes =
+      prizesData.prizes || [];
+
+    const app =
+      document.getElementById("app");
+
+    app.innerHTML = `
+
+      <div class="card">
+
+        <h3>
+          奖项管理
+        </h3>
+
+        <div class="actions">
+
+          <button
+            onclick="addPrize()"
+          >
+            ＋ 添加奖项
+          </button>
+
+          <button
+            onclick="savePrizes()"
+          >
+            保存奖项配置
+          </button>
+
+          <button
+            class="gray"
+            onclick="renderDashboard()"
+          >
+            刷新数据
+          </button>
+
+          <button
+            class="gray"
+            onclick="logout()"
+          >
+            退出登录
+          </button>
+
+        </div>
+
+        <div style="overflow:auto">
+
+          <table>
+
+            <thead>
+
+              <tr>
+
+                <th>ID</th>
+
+                <th>图标</th>
+
+                <th>奖项名称</th>
+
+                <th>权重</th>
+
+                <th>库存</th>
+
+                <th>启用</th>
+
+                <th>操作</th>
+
+              </tr>
+
+            </thead>
+
+            <tbody id="prizeBody">
+
+              ${renderPrizeRows()}
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </div>
+
+
+      <div class="card">
+
+        <h3>
+          活动统计
+        </h3>
+
+        <div class="stats">
+
+          <div class="stat">
+
+            <div class="stat-title">
+              总抽奖次数
+            </div>
+
+            <div class="stat-number">
+              ${stats.totalDraws || 0}
+            </div>
+
+          </div>
+
+          <div class="stat">
+
+            <div class="stat-title">
+              参与人数
+            </div>
+
+            <div class="stat-number">
+              ${stats.totalUsers || 0}
+            </div>
+
+          </div>
+
+          <div class="stat">
+
+            <div class="stat-title">
+              奖项数量
+            </div>
+
+            <div class="stat-number">
+              ${currentPrizes.length}
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="card">
+
+        <h3>
+          抽奖记录
+        </h3>
+
+        <div class="log">
+
+          ${
+            logs.logs &&
+            logs.logs.length
+            ?
+            `
+              <table>
+
+                <thead>
+
+                  <tr>
+
+                    <th>时间</th>
+
+                    <th>参与编号</th>
+
+                    <th>中奖奖项</th>
+
+                  </tr>
+
+                </thead>
+
+                <tbody>
+
+                  ${
+                    logs.logs.map(
+                      log => `
+
+                        <tr>
+
+                          <td>
+                            ${formatTime(log.time)}
+                          </td>
+
+                          <td>
+                            ${escapeHtml(log.userId)}
+                          </td>
+
+                          <td>
+                            ${escapeHtml(log.prizeName)}
+                          </td>
+
+                        </tr>
+
+                      `
+                    ).join("")
+                  }
+
+                </tbody>
+
+              </table>
+            `
+            :
+            `
+              <div class="empty">
+                暂无抽奖记录
+              </div>
+            `
+          }
+
+        </div>
+
+      </div>
+
+    `;
+
+  }catch(error){
+
+    console.error(error);
+
+    alert(
+      "加载后台数据失败"
+    );
+
+  }
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| 奖项表格
+|--------------------------------------------------------------------------
+*/
+
+function renderPrizeRows(){
+
+  if(!currentPrizes.length){
+
+    return `
+      <tr>
+        <td colspan="7" class="empty">
+          暂无奖项，请点击添加奖项
+        </td>
+      </tr>
+    `;
+
+  }
+
+  return currentPrizes.map(
+    (p,index) => `
+
+      <tr>
+
+        <td>
+          ${p.id}
+        </td>
+
+        <td>
+
+          <input
+            data-field="image"
+            data-index="${index}"
+            value="${escapeHtml(p.image)}"
+            style="width:70px"
+          >
+
+        </td>
+
+        <td>
+
+          <input
+            data-field="name"
+            data-index="${index}"
+            value="${escapeHtml(p.name)}"
+            style="width:180px"
+          >
+
+        </td>
+
+        <td>
+
+          <input
+            data-field="weight"
+            data-index="${index}"
+            type="number"
+            min="0"
+            step="0.01"
+            value="${p.weight}"
+            style="width:100px"
+          >
+
+        </td>
+
+        <td>
+
+          <input
+            data-field="stock"
+            data-index="${index}"
+            type="number"
+            min="0"
+            value="${p.stock}"
+            style="width:100px"
+          >
+
+        </td>
+
+        <td>
+
+          ${
+            p.enabled
+            ?
+            `
+              <span class="badge badge-on">
+                已启用
+              </span>
+            `
+            :
+            `
+              <span class="badge badge-off">
+                已关闭
+              </span>
+            `
+          }
+
+          <br>
+
+          <input
+            data-field="enabled"
+            data-index="${index}"
+            type="checkbox"
+            ${p.enabled ? "checked" : ""}
+            style="margin-top:7px"
+          >
+
+        </td>
+
+        <td>
+
+          <button
+            class="danger"
+            onclick="deletePrize(${index})"
+          >
+            删除
+          </button>
+
+        </td>
+
+      </tr>
+
+    `
+  ).join("");
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| 获取当前表格数据
+|--------------------------------------------------------------------------
+*/
+
+function collectPrizes(){
+
+  return currentPrizes.map(
+    (p,index) => {
+
+      const image =
+        document.querySelector(
+          `[data-field="image"][data-index="${index}"]`
+        );
+
+      const name =
+        document.querySelector(
+          `[data-field="name"][data-index="${index}"]`
+        );
+
+      const weight =
+        document.querySelector(
+          `[data-field="weight"][data-index="${index}"]`
+        );
+
+      const stock =
+        document.querySelector(
+          `[data-field="stock"][data-index="${index}"]`
+        );
+
+      const enabled =
+        document.querySelector(
+          `[data-field="enabled"][data-index="${index}"]`
+        );
+
+      return {
+
+        id:p.id,
+
+        image:
+          image
+          ?
+          image.value
+          :
+          p.image,
+
+        name:
+          name
+          ?
+          name.value
+          :
+          p.name,
+
+        weight:
+          weight
+          ?
+          Math.max(
+            0,
+            Number(weight.value) || 0
+          )
+          :
+          p.weight,
+
+        stock:
+          stock
+          ?
+          Math.max(
+            0,
+            Number(stock.value) || 0
+          )
+          :
+          p.stock,
+
+        enabled:
+          enabled
+          ?
+          enabled.checked
+          :
+          p.enabled
+
+      };
+
+    }
+  );
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| 保存奖项
+|--------------------------------------------------------------------------
+*/
+
+async function savePrizes(){
+
+  const prizes =
+    collectPrizes();
+
+  if(!prizes.length){
+
+    alert("至少需要一个奖项");
+
+    return;
+
+  }
+
+  for(const prize of prizes){
+
+    if(!prize.name.trim()){
+
+      alert("奖项名称不能为空");
+
+      return;
+
+    }
+
+    if(prize.weight < 0){
+
+      alert("权重不能小于0");
+
+      return;
+
+    }
+
+    if(prize.stock < 0){
+
+      alert("库存不能小于0");
+
+      return;
+
+    }
+
+  }
+
+  try{
+
+    const res =
+      await fetch(
+        "/api/admin/prizes",
+        {
+          method:"PUT",
+
+          headers:getHeaders(),
+
+          body:
+            JSON.stringify({
+              prizes:prizes
+            })
+        }
+      );
+
+    const data =
+      await res.json();
+
+    if(!data.success){
+
+      alert(
+        data.message ||
+        "保存失败"
+      );
+
+      return;
+
+    }
+
+    alert("奖项配置保存成功");
+
+    await renderDashboard();
+
+  }catch(error){
+
+    alert(
+      "保存失败，请检查网络"
+    );
+
+  }
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| 添加奖项
+|--------------------------------------------------------------------------
+*/
+
+async function addPrize(){
+
+  const prizes =
+    collectPrizes();
+
+  prizes.push({
+
+    id:
+      Date.now(),
+
+    name:
+      "新奖项",
+
+    image:
+      "🎁",
+
+    weight:
+      1,
+
+    stock:
+      100,
+
+    enabled:
+      true
+
+  });
+
+  try{
+
+    const res =
+      await fetch(
+        "/api/admin/prizes",
+        {
+          method:"PUT",
+
+          headers:getHeaders(),
+
+          body:
+            JSON.stringify({
+              prizes:prizes
+            })
+        }
+      );
+
+    const data =
+      await res.json();
+
+    if(!data.success){
+
+      alert(
+        data.message ||
+        "添加失败"
+      );
+
+      return;
+
+    }
+
+    await renderDashboard();
+
+  }catch(error){
+
+    alert(
+      "添加失败"
+    );
+
+  }
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| 删除奖项
+|--------------------------------------------------------------------------
+*/
+
+async function deletePrize(index){
+
+  if(!confirm(
+    "确定要删除这个奖项吗？"
+  )){
+
+    return;
+
+  }
+
+  const prizes =
+    collectPrizes();
+
+  prizes.splice(
+    index,
+    1
+  );
+
+  if(!prizes.length){
+
+    alert(
+      "至少保留一个奖项"
+    );
+
+    return;
+
+  }
+
+  try{
+
+    const res =
+      await fetch(
+        "/api/admin/prizes",
+        {
+          method:"PUT",
+
+          headers:getHeaders(),
+
+          body:
+            JSON.stringify({
+              prizes:prizes
+            })
+        }
+      );
+
+    const data =
+      await res.json();
+
+    if(!data.success){
+
+      alert(
+        data.message ||
+        "删除失败"
+      );
+
+      return;
+
+    }
+
+    await renderDashboard();
+
+  }catch(error){
+
+    alert(
+      "删除失败"
+    );
+
+  }
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| 退出登录
+|--------------------------------------------------------------------------
+*/
+
+function logout(){
+
+  token = "";
+
+  localStorage.removeItem(
+    "panshi_admin_token"
+  );
+
+  location.reload();
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| HTML 安全处理
+|--------------------------------------------------------------------------
+*/
+
+function escapeHtml(value){
+
+  return String(value ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| 时间格式
+|--------------------------------------------------------------------------
+*/
+
+function formatTime(value){
+
+  try{
+
+    return new Date(
+      value
+    ).toLocaleString(
+      "zh-CN",
+      {
+        hour12:false
+      }
+    );
+
+  }catch(error){
+
+    return value;
+
+  }
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| 启动
+|--------------------------------------------------------------------------
+*/
+
+init();
+
+</script>
+
+</body>
+</html>
